@@ -2,9 +2,9 @@
  * 사이트 URL 중앙 관리 유틸리티
  * 환경에 따라 자동으로 적절한 URL을 반환합니다.
  *
- * 브라우저 환경: window.location.origin을 체크해서
- * - "hamzzi"가 포함되어 있으면 → https://hamzzi.vercel.app
- * - 아니면 → http://localhost:3000
+ * Vercel 환경 변수 NEXT_PUBLIC_SITE_URL 사용:
+ * - Vercel에 NEXT_PUBLIC_SITE_URL=https://hamzzi.vercel.app 설정
+ * - 로컬에서는 자동으로 localhost 사용
  */
 
 /**
@@ -14,27 +14,12 @@
  *
  * @example
  * const siteUrl = getSiteUrl();
- * // 프로덕션: "https://hamzzi.vercel.app"
+ * // 프로덕션: "https://hamzzi.vercel.app" (환경 변수에서)
  * // 개발: "http://localhost:3000"
  */
 export function getSiteUrl(): string {
-  // 브라우저 환경: URL 문자열 체크로 간단하게 판단
-  if (typeof window !== 'undefined') {
-    const currentUrl = window.location.origin;
-    // hamzzi가 포함되어 있으면 프로덕션 URL 사용
-    return currentUrl.includes('hamzzi')
-      ? 'https://hamzzi.vercel.app'
-      : 'http://localhost:3000';
-  }
-
-  // 서버 사이드: 환경 변수 체크
-  const vercelUrl = process.env.NEXT_PUBLIC_VERCEL_URL || process.env.VERCEL_URL;
-  if (vercelUrl && vercelUrl.includes('hamzzi')) {
-    return 'https://hamzzi.vercel.app';
-  }
-
-  // 최종 폴백
-  return 'http://localhost:3000';
+  // Vercel 환경 변수 직접 사용 (가장 확실한 방법)
+  return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 }
 
 /**
