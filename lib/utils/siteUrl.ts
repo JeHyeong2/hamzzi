@@ -3,10 +3,11 @@
  * 환경에 따라 자동으로 적절한 URL을 반환합니다.
  *
  * 환경 감지 우선순위:
- * 1. NEXT_PUBLIC_SITE_URL 환경 변수
- * 2. Vercel 자동 URL (NEXT_PUBLIC_VERCEL_URL)
- * 3. window.location.origin (브라우저 환경)
- * 4. 폴백: http://localhost:3000
+ * 1. NEXT_PUBLIC_SITE_URL 환경 변수 (명시적 설정)
+ * 2. NEXT_PUBLIC_VERCEL_URL (클라이언트 사이드 Vercel URL)
+ * 3. VERCEL_URL (서버 사이드 Vercel URL - 자동 제공)
+ * 4. window.location.origin (브라우저 환경)
+ * 5. 폴백: http://localhost:3000
  */
 
 /**
@@ -25,12 +26,17 @@ export function getSiteUrl(): string {
     return process.env.NEXT_PUBLIC_SITE_URL;
   }
 
-  // 2순위: Vercel 자동 배포 URL
+  // 2순위: Vercel 자동 배포 URL (클라이언트)
   if (process.env.NEXT_PUBLIC_VERCEL_URL) {
     return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
   }
 
-  // 3순위: 브라우저 환경에서 현재 origin 사용
+  // 3순위: Vercel 자동 배포 URL (서버 사이드)
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  // 4순위: 브라우저 환경에서 현재 origin 사용
   if (typeof window !== 'undefined') {
     return window.location.origin;
   }
