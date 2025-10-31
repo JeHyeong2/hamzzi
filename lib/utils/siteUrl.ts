@@ -2,12 +2,9 @@
  * 사이트 URL 중앙 관리 유틸리티
  * 환경에 따라 자동으로 적절한 URL을 반환합니다.
  *
- * 환경 감지 우선순위:
- * 1. window.location.origin (브라우저 환경 - OAuth 등 클라이언트 실행)
- * 2. NEXT_PUBLIC_SITE_URL (서버 사이드 명시적 설정)
- * 3. NEXT_PUBLIC_VERCEL_URL (서버 사이드 Vercel URL)
- * 4. VERCEL_URL (서버 사이드 Vercel URL - 자동 제공)
- * 5. 폴백: http://localhost:3000
+ * 브라우저 환경: window.location.origin을 체크해서
+ * - "hamzzi"가 포함되어 있으면 → https://hamzzi.vercel.app
+ * - 아니면 → http://localhost:3000
  */
 
 /**
@@ -21,29 +18,22 @@
  * // 개발: "http://localhost:3000"
  */
 export function getSiteUrl(): string {
-  // 1순위: 브라우저 환경에서는 항상 현재 origin 사용
-  // OAuth는 클라이언트에서 실행되므로 런타임에 정확한 도메인 사용
+  // 브라우저 환경: URL 문자열 체크로 간단하게 판단
   if (typeof window !== 'undefined') {
-    return window.location.origin;
+    const currentUrl = window.location.origin;
+    // hamzzi가 포함되어 있으면 프로덕션 URL 사용
+    return currentUrl.includes('hamzzi')
+      ? 'https://hamzzi.vercel.app'
+      : 'http://localhost:3000';
   }
 
-  // 서버 사이드: 환경 변수 체크 (SSR, API routes 등)
-  // 2순위: 환경 변수로 명시적 설정
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL;
+  // 서버 사이드: 환경 변수 체크
+  const vercelUrl = process.env.NEXT_PUBLIC_VERCEL_URL || process.env.VERCEL_URL;
+  if (vercelUrl && vercelUrl.includes('hamzzi')) {
+    return 'https://hamzzi.vercel.app';
   }
 
-  // 3순위: Vercel 자동 배포 URL (클라이언트)
-  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
-    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
-  }
-
-  // 4순위: Vercel 자동 배포 URL (서버 사이드)
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-
-  // 최종 폴백: 개발 환경 기본값
+  // 최종 폴백
   return 'http://localhost:3000';
 }
 
