@@ -6,6 +6,7 @@
 import { supabase } from '../supabase';
 import { User } from '../store';
 import type { Session } from '@supabase/supabase-js';
+import { getCallbackUrl } from '../utils/siteUrl';
 
 /**
  * Google OAuth로 로그인 시작
@@ -15,7 +16,7 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: getCallbackUrl('/auth/callback'),
       queryParams: {
         access_type: 'offline',
         prompt: 'consent',
