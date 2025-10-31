@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, type Transition } from 'framer-motion';
 import React from 'react';
 
 interface CharacterAnimationProps {
@@ -69,7 +69,7 @@ export default function CharacterAnimation({
   const selectedVariant = animationVariants[variant];
 
   // 각 애니메이션의 트랜지션 설정
-  const transitionSettings: Record<string, any> = {
+  const transitionSettings: Record<string, Transition> = {
     celebrate: {
       duration: 2,
       repeat: Infinity,
@@ -121,7 +121,7 @@ export default function CharacterAnimation({
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        origin: 'center bottom',
+        transformOrigin: 'center bottom',
       }}
     >
       {children}

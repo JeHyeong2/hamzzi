@@ -151,7 +151,11 @@ export async function updateMissionStatus(
   status: 'in_progress' | 'completed' | 'abandoned'
 ): Promise<Mission | null> {
   try {
-    const updateData: any = { status };
+    const updateData: {
+      status: 'in_progress' | 'completed' | 'abandoned';
+      started_at?: string;
+      completed_at?: string;
+    } = { status };
 
     if (status === 'in_progress') {
       updateData.started_at = new Date().toISOString();

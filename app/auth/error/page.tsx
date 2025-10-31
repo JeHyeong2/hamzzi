@@ -5,12 +5,12 @@
  * 인증 과정에서 오류 발생 시 표시되는 페이지
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import PageTransition from '@/components/PageTransition';
 
-export default function AuthErrorPage() {
+function ErrorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [errorMessage, setErrorMessage] = useState('알 수 없는 오류가 발생했습니다');
@@ -64,5 +64,13 @@ export default function AuthErrorPage() {
         </div>
       </>
     </PageTransition>
+  );
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">로딩 중...</div>}>
+      <ErrorContent />
+    </Suspense>
   );
 }

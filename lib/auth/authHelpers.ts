@@ -5,6 +5,7 @@
 
 import { supabase } from '../supabase';
 import { User } from '../store';
+import type { Session } from '@supabase/supabase-js';
 
 /**
  * Google OAuth로 로그인 시작
@@ -227,7 +228,7 @@ export async function isProfileComplete(authId: string): Promise<boolean> {
  * @returns unsubscribe 함수
  */
 export function onAuthStateChange(
-  callback: (event: string, session: any) => void
+  callback: (event: string, session: Session | null) => void
 ) {
   const { data } = supabase.auth.onAuthStateChange((event, session) => {
     console.log('🔐 Auth 상태 변경:', event, session?.user?.email);
