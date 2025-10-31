@@ -1,0 +1,24 @@
+{
+  "name": "정서불안 김햄찌",
+  "short_name": "햄찌",
+  "description": "규칙적인 자기관리 습관을 기르는 미션 기반 습관 앱",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF5E1",
+  "theme_color": "#FFD700",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

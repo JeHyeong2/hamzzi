@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
+import { useSound } from '@/lib/SoundContext';
 import { useNavigationGuard } from '@/lib/hooks/useNavigationGuard';
 import { CATEGORY_CONFIG, BADGES_CONFIG } from '@/lib/constants';
 import AnimatedBackground from '@/components/AnimatedBackground';
@@ -9,12 +11,18 @@ import PageTransition from '@/components/PageTransition';
 
 export default function AchievementsPage() {
   const router = useRouter();
-  const { user, categoryScores, totalCompletedCount, unlockedBadgeIds } = useStore();
+  const { user, categoryScores, totalCompletedCount, unlockedBadgeIds, checkAndUnlockBadges } = useStore();
+  const { playClick, playBadge } = useSound(); // 사운드 효과 Hook
 
   // 네비게이션 가드: 인증 필수
   useNavigationGuard({
     requireAuth: true,
   });
+
+  // 페이지 로드 시 배지 해금 체크 (조건을 만족한 배지 자동 해금)
+  useEffect(() => {
+    checkAndUnlockBadges();
+  }, [checkAndUnlockBadges]);
 
   const sleep = categoryScores.find((s) => s.category === 'sleep') || { score: 0, goal: 20 };
   const meal = categoryScores.find((s) => s.category === 'meal') || { score: 0, goal: 20 };
@@ -47,10 +55,13 @@ export default function AchievementsPage() {
         <AnimatedBackground variant="home" />
 
       {/* 컨텐츠 */}
-      <div className="relative z-10 min-h-screen p-6">
+      <div className="relative z-10 min-h-screen p-6 max-w-2xl mx-auto">
       {/* 헤더 */}
       <div className="flex items-center mb-6">
-        <button onClick={() => router.back()} className="mr-4 text-2xl">
+        <button onClick={() => {
+          playClick();
+          router.back();
+        }} className="mr-4 text-2xl">
           🐹
         </button>
         <h1 className="text-xl font-bold">나의 달성도</h1>
@@ -132,9 +143,14 @@ export default function AchievementsPage() {
             return (
               <div
                 key={badge.id}
-                className={`rounded-xl p-6 text-center transition duration-300 ${
+                onClick={() => {
+                  if (isUnlocked) {
+                    playBadge(); // 배지 클릭 사운드 재생
+                  }
+                }}
+                className={`rounded-xl p-6 text-center transition-all duration-300 ${
                   isUnlocked
-                    ? 'bg-[var(--bg-yellow)] border-2 border-[var(--primary-gold)] shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer'
+                    ? 'bg-[var(--bg-yellow)] border-2 border-[var(--primary-gold)] shadow-lg hover:shadow-xl cursor-pointer animate-badge-pulse'
                     : 'bg-gray-100 opacity-40 border-2 border-gray-300'
                 }`}
               >

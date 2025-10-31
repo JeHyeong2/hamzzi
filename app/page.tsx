@@ -19,10 +19,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useStore } from '@/lib/store';
+import { useSound } from '@/lib/SoundContext';
 import { signInWithGoogle } from '@/lib/auth/authHelpers';
 import { getNormalMediaPath, getMediaType } from '@/lib/mediaUtils';
+import { MEDIA_SIZES } from '@/lib/constants';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import WaveText from '@/components/WaveText';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -32,6 +35,7 @@ export default function LandingPage() {
   const router = useRouter();
   const { session, isLoading, isAuthenticated } = useAuth();
   const { user } = useStore();
+  const { playClick } = useSound(); // 사운드 효과 Hook
 
   const [mediaPath, setMediaPath] = useState('');
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -86,13 +90,13 @@ export default function LandingPage() {
       <AnimatedBackground variant="home" />
 
       {/* 컨텐츠 (배경 위에 표시) */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6 max-w-2xl mx-auto">
         {/* 햄찌 미디어 */}
         <div className="mb-6 animate-slide-up">
           {mediaPath && (
             getMediaType(mediaPath) === 'video' ? (
               <video
-                className="w-80 h-80 rounded-lg"
+                className={`${MEDIA_SIZES.HAMZZI_CHARACTER.className} rounded-lg`}
                 autoPlay
                 loop
                 muted
@@ -101,10 +105,13 @@ export default function LandingPage() {
                 <source src={mediaPath} type="video/mp4" />
               </video>
             ) : (
-              <img
+              <Image
                 src={mediaPath}
                 alt="햄찌"
-                className="w-80 h-80 object-cover rounded-lg"
+                width={MEDIA_SIZES.HAMZZI_CHARACTER.width}
+                height={MEDIA_SIZES.HAMZZI_CHARACTER.height}
+                className="object-cover rounded-lg"
+                priority
               />
             )
           )}
@@ -156,7 +163,10 @@ export default function LandingPage() {
           {/* 도움말 링크 */}
           <div className="mt-4 text-center">
             <button
-              onClick={() => router.push('/help')}
+              onClick={() => {
+                playClick();
+                router.push('/help');
+              }}
               className="text-sm text-gray-600 underline hover:text-gray-800"
             >
               도움이 필요하신가요?

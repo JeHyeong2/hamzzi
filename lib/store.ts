@@ -68,6 +68,7 @@ interface AppState {
   setBadges: (badges: Badge[]) => void;
   unlockedBadgeIds: string[];
   unlockBadge: (badgeId: string) => void;
+  checkAndUnlockBadges: () => void;
 
   // 총 달성 횟수
   totalCompletedCount: number;
@@ -134,6 +135,39 @@ export const useStore = create<AppState>()(
             ? state.unlockedBadgeIds
             : [...state.unlockedBadgeIds, badgeId],
         })),
+
+      /**
+       * totalCompletedCount와 current_streak를 기준으로 배지 해금 체크
+       * 조건을 만족하는 모든 배지를 자동으로 해금합니다.
+       */
+      checkAndUnlockBadges: () =>
+        set((state) => {
+          const newUnlockedIds = [...state.unlockedBadgeIds];
+          const totalCount = state.totalCompletedCount;
+          const currentStreak = state.user?.current_streak || 0;
+
+          // 배지 1: 첫 미션 완료 (1회 이상)
+          if (totalCount >= 1 && !newUnlockedIds.includes('1')) {
+            newUnlockedIds.push('1');
+          }
+
+          // 배지 2: 5회 달성
+          if (totalCount >= 5 && !newUnlockedIds.includes('2')) {
+            newUnlockedIds.push('2');
+          }
+
+          // 배지 3: 10회 달성
+          if (totalCount >= 10 && !newUnlockedIds.includes('3')) {
+            newUnlockedIds.push('3');
+          }
+
+          // 배지 4: 3일 연속 달성
+          if (currentStreak >= 3 && !newUnlockedIds.includes('4')) {
+            newUnlockedIds.push('4');
+          }
+
+          return { unlockedBadgeIds: newUnlockedIds };
+        }),
 
       setTotalCompletedCount: (count) => set({ totalCompletedCount: count }),
 

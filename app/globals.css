@@ -162,6 +162,16 @@ body {
   }
 }
 
+/* badge-pulse: 배지가 살짝 커졌다 작아지는 애니메이션 */
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
 /* ===== 유틸리티 클래스 ===== */
 
 /* Animations - with better timing */
@@ -203,6 +213,10 @@ body {
 
 .animate-wave {
   animation: wave 2.5s ease-in-out infinite;
+}
+
+.animate-badge-pulse {
+  animation: badge-pulse 2s ease-in-out infinite;
 }
 
 /* Backdrop blur (반투명 배경) */

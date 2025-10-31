@@ -6,21 +6,25 @@ import { useStore } from '@/lib/store';
 import { completeMission, abandonMission } from '@/lib/services';
 import { ENCOURAGEMENT_MESSAGES, SUCCESS_MESSAGES, ABANDON_MESSAGES, CATEGORY_CONFIG } from '@/lib/constants';
 import { getMissionVideoPath } from '@/lib/mediaUtils';
+import { calculateOptimisticStreak } from '@/lib/utils';
 import { useNavigationGuard } from '@/lib/hooks/useNavigationGuard';
 import { useSmartNavigation } from '@/lib/hooks/useSmartNavigation';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import PageTransition from '@/components/PageTransition';
 import CharacterAnimation from '@/components/CharacterAnimation';
 import { toast } from 'react-toastify';
+import { useSound } from '@/lib/SoundContext';
+import { ClickableHamzziVideo } from '@/components/ClickableHamzziVideo';
 
 export default function MissionPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, currentMission, setCurrentMission, setUser, updateStreak, incrementTotalCount, incrementCategoryScore, unlockBadge, totalCompletedCount } = useStore();
+  const { user, currentMission, setCurrentMission, setUser, updateStreak, incrementTotalCount, incrementCategoryScore, checkAndUnlockBadges, totalCompletedCount } = useStore();
+  const { playPrimary, playSecondary, playSuccess, playFailure } = useSound(); // 사운드 효과 Hook
 
   const [timeRemaining, setTimeRemaining] = useState({ hours: 0, minutes: 0 });
   const [message, setMessage] = useState(ENCOURAGEMENT_MESSAGES[0]);
-  const [loading, setLoading] = useState(false);
+  const [missionVideoPath, setMissionVideoPath] = useState('');
 
   // 네비게이션 가드: 로그인 + 미션 필수 체크
   useNavigationGuard({
@@ -69,89 +73,109 @@ export default function MissionPage() {
     return () => clearInterval(messageInterval);
   }, []);
 
-  const handleComplete = async () => {
+  // 미션 영상 랜덤 선택 (페이지 로드 시 한 번만)
+  useEffect(() => {
+    if (currentMission?.category) {
+      setMissionVideoPath(getMissionVideoPath(currentMission.category));
+    }
+  }, [currentMission?.category]);
+
+  const handleComplete = () => {
     if (!user || !currentMission) return;
 
-    setLoading(true);
-    try {
-      // completeMission에 사용자 정보 전달하고 새로운 streak 값 받기
-      const newStreak = await completeMission(user, currentMission.id, currentMission.category);
+    // ========================================
+    // OPTIMISTIC UPDATE: 즉시 UI 업데이트
+    // ========================================
 
-      // Zustand store 업데이트 (streak과 last_completed_date)
-      const today = new Date().toISOString();
-      setUser({
-        ...user,
-        current_streak: newStreak,
-        last_completed_date: today,
+    // 1. Optimistic Streak 계산 (API 호출 없이 즉시 계산)
+    const optimisticStreak = calculateOptimisticStreak(user);
+    const today = new Date().toISOString();
+
+    // 2. Zustand Store 즉시 업데이트
+    setUser({
+      ...user,
+      current_streak: optimisticStreak,
+      max_streak: Math.max(optimisticStreak, user.max_streak || 0),
+      last_completed_date: today,
+    });
+
+    // 3. 카테고리 점수 즉시 증가
+    incrementCategoryScore(currentMission.category);
+
+    // 4. 총 달성 횟수 즉시 증가
+    incrementTotalCount();
+
+    // 5. 배지 해금 체크 (totalCompletedCount와 streak 기준으로 자동 해금)
+    checkAndUnlockBadges();
+
+    // 6. 성공 토스트 알림 즉시 표시
+    const selectedMessage = SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)];
+    const praise = selectedMessage.replace('{streak}', optimisticStreak.toString());
+    toast.success(praise, {
+      autoClose: 2000,
+    });
+
+    // 7. 미션 상태 초기화
+    const missionId = currentMission.id;
+    const category = currentMission.category;
+    setCurrentMission(null);
+
+    // 8. 즉시 네비게이션 (2초 로딩 화면 표시)
+    navigate('/mission-success');
+
+    // ========================================
+    // BACKGROUND SYNC: API 호출은 백그라운드에서 실행
+    // ========================================
+    completeMission(user, missionId, category)
+      .then((actualStreak) => {
+        // API 결과와 optimistic 값이 다른 경우 보정 (극히 드문 케이스)
+        if (actualStreak !== optimisticStreak) {
+          console.warn(
+            `⚠️ Streak 값 불일치: optimistic=${optimisticStreak}, actual=${actualStreak}`
+          );
+          setUser({
+            ...user,
+            current_streak: actualStreak,
+            max_streak: Math.max(actualStreak, user.max_streak || 0),
+            last_completed_date: today,
+          });
+        }
+      })
+      .catch((error) => {
+        console.error('❌ 백그라운드 미션 완료 오류:', error);
+        // 에러 발생 시에도 UI는 이미 업데이트됨 (optimistic update)
       });
-
-      // 카테고리 점수 증가
-      incrementCategoryScore(currentMission.category);
-
-      // 총 달성 횟수 증가
-      incrementTotalCount();
-
-      // 새로운 totalCompletedCount 계산 (incrementTotalCount 직후 1 증가됨)
-      const newTotalCount = totalCompletedCount + 1;
-
-      // 배지 언락 확인
-      // id='1': 첫 미션 완료 (1회)
-      if (newTotalCount === 1) {
-        unlockBadge('1');
-      }
-      // id='2': 5회 달성
-      if (newTotalCount === 5) {
-        unlockBadge('2');
-      }
-      // id='3': 10회 달성
-      if (newTotalCount === 10) {
-        unlockBadge('3');
-      }
-      // id='4': 3일 연속 달성
-      if (newStreak === 3) {
-        unlockBadge('4');
-      }
-
-      // 성공 토스트 알림 - SUCCESS_MESSAGES에서 랜덤 선택
-      const selectedMessage = SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)];
-      const praise = selectedMessage.replace('{streak}', newStreak.toString());
-      toast.success(praise, {
-        autoClose: 2000,
-      });
-
-      setCurrentMission(null);
-      // 스마트 네비게이션 사용 (로딩 화면 2초 표시 후 자동 전환)
-      navigate('/mission-success');
-    } catch (error) {
-      console.error('미션 완료 오류:', error);
-      toast.error('미션 완료에 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
   };
 
-  const handleAbandon = async () => {
+  const handleAbandon = () => {
     if (!currentMission) return;
 
-    setLoading(true);
-    setCurrentMission(null); // 먼저 미션 상태 초기화
-    try {
-      await abandonMission(currentMission.id);
+    // ========================================
+    // OPTIMISTIC UPDATE: 즉시 UI 업데이트
+    // ========================================
 
-      // 포기 토스트 알림 - ABANDON_MESSAGES에서 랜덤 선택
-      const abandonMessage = ABANDON_MESSAGES[Math.floor(Math.random() * ABANDON_MESSAGES.length)];
-      toast.info(abandonMessage, {
-        autoClose: 2000,
-      });
+    // 1. 포기 토스트 알림 즉시 표시
+    const abandonMessage = ABANDON_MESSAGES[Math.floor(Math.random() * ABANDON_MESSAGES.length)];
+    toast.info(abandonMessage, {
+      autoClose: 2000,
+    });
 
-      // 스마트 네비게이션 사용 (로딩 화면 2초 표시 후 자동 전환)
-      navigate('/mission-abandon');
-    } catch (error) {
-      console.error('미션 포기 오류:', error);
-      alert('미션 포기에 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
+    // 2. 미션 ID 저장 (API 호출용)
+    const missionId = currentMission.id;
+
+    // 3. 미션 상태 즉시 초기화
+    setCurrentMission(null);
+
+    // 4. 즉시 네비게이션 (2초 로딩 화면 표시)
+    navigate('/mission-abandon');
+
+    // ========================================
+    // BACKGROUND SYNC: API 호출은 백그라운드에서 실행
+    // ========================================
+    abandonMission(missionId).catch((error) => {
+      console.error('❌ 백그라운드 미션 포기 오류:', error);
+      // 에러 발생 시에도 UI는 이미 업데이트됨 (optimistic update)
+    });
   };
 
   // 카테고리별 테마 색상 (미션이 없으면 기본값 사용)
@@ -169,7 +193,7 @@ export default function MissionPage() {
 
         {/* 컨텐츠 (배경 위에 표시) */}
         <div
-        className="relative z-10 min-h-screen overflow-hidden"
+        className="relative z-10 min-h-screen overflow-hidden max-w-2xl mx-auto"
         style={{
           backgroundImage: `linear-gradient(135deg, ${categoryTheme?.backgroundColor}, ${categoryTheme?.themeColor}20)`,
           backgroundAttachment: 'fixed',
@@ -202,38 +226,30 @@ export default function MissionPage() {
         </div>
 
         <div className="p-6 flex flex-col items-center justify-center min-h-[calc(100vh-60px)]">
-          <h2 className="text-lg font-semibold mb-4">응원하는 햄스터</h2>
+          <h2 className="text-xl font-semibold mb-3">응원하는 햄찌</h2>
 
           {/* 미션 제목 */}
-          <p className="text-center mb-6 text-sm">
+          <p className="text-center mb-6 text-lg">
             오늘 미션 <span className="font-bold">[{currentMission?.title}]</span> 하는 중
           </p>
 
           {/* 타이머: 자정까지의 남은 시간 */}
-          <div className="bg-white/80 backdrop-blur-md rounded-3xl px-12 py-8 shadow-lg mb-8 border border-white/30">
-            <p className="text-sm text-gray-500 text-center mb-2">자정까지 남은 시간</p>
+          <div className="bg-white/30 backdrop-blur-lg rounded-3xl px-8 py-5 shadow-lg mb-4 ">
+            <p className="text-base text-gray-500 text-center mb-2">자정까지 남은 시간</p>
             <div className="text-6xl font-bold text-center font-mono">
-              {timeRemaining.hours.toString().padStart(2, '0')} : {timeRemaining.minutes.toString().padStart(2, '0')}
+              {timeRemaining.hours.toString().padStart(2, '0')}:{timeRemaining.minutes.toString().padStart(2, '0')}
             </div>
           </div>
 
           {/* 햄찌 응원 이미지 */}
           <div className="mb-6">
             <CharacterAnimation variant="encourage">
-              {currentMission?.category && (
-                <video
+              {missionVideoPath && (
+                <ClickableHamzziVideo
+                  src={missionVideoPath}
                   className="w-64 h-64"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  key={currentMission.id}
-                >
-                  <source
-                    src={getMissionVideoPath(currentMission.category)}
-                    type="video/mp4"
-                  />
-                </video>
+                  volume={0.8}
+                />
               )}
             </CharacterAnimation>
           </div>
@@ -243,8 +259,11 @@ export default function MissionPage() {
 
           {/* 버튼들 */}
           <button
-            onClick={handleComplete}
-            disabled={loading || isNavigating}
+            onClick={() => {
+              playSuccess(); // 성공 효과음 (멜로디)
+              handleComplete();
+            }}
+            disabled={isNavigating}
             className="btn-base w-full max-w-sm mb-3 transition-all duration-200"
             style={{
               background: `linear-gradient(135deg, ${headerBgColor}, ${headerBgColor}dd)`,
@@ -260,12 +279,15 @@ export default function MissionPage() {
               e.currentTarget.style.transform = 'scale(1) translateY(0)';
             }}
           >
-            {loading || isNavigating ? '처리 중...' : '오늘 미션 성공! 🎉'}
+            {isNavigating ? '처리 중...' : '오늘 미션 성공! 🎉'}
           </button>
 
           <button
-            onClick={handleAbandon}
-            disabled={loading || isNavigating}
+            onClick={() => {
+              playFailure(); // Failure 효과음
+              handleAbandon();
+            }}
+            disabled={isNavigating}
             className="text-sm text-gray-600 underline hover:text-gray-800 disabled:opacity-50 transition"
           >
             다음에 다시 해보기

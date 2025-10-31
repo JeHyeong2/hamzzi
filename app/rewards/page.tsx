@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { useNavigationGuard } from '@/lib/hooks/useNavigationGuard';
+import { useSound } from '@/lib/SoundContext';
+import { ClickableHamzziVideo } from '@/components/ClickableHamzziVideo';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import PageTransition from '@/components/PageTransition';
 
@@ -19,6 +21,7 @@ interface RewardWithStatus {
 export default function RewardsPage() {
   const router = useRouter();
   const { user, totalCompletedCount } = useStore();
+  const { playClick } = useSound(); // 사운드 효과 Hook
   const [rewards, setRewards] = useState<RewardWithStatus[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -88,13 +91,19 @@ export default function RewardsPage() {
         <AnimatedBackground variant="home" />
 
         {/* 컨텐츠 */}
-      <div className="relative z-10 min-h-screen p-6">
+      <div className="relative z-10 min-h-screen p-6 max-w-2xl mx-auto">
       {/* 헤더 */}
       <div className="flex justify-between items-center mb-6">
-        <button onClick={() => router.back()} className="text-2xl">
+        <button onClick={() => {
+          playClick();
+          router.back();
+        }} className="text-2xl">
           🐹
         </button>
-        <button onClick={() => router.push('/home')} className="text-2xl">
+        <button onClick={() => {
+          playClick();
+          router.push('/home');
+        }} className="text-2xl">
           🏠
         </button>
       </div>
@@ -132,15 +141,11 @@ export default function RewardsPage() {
                   <>
                     {/* 해금된 리워드 */}
                     <div className="aspect-video bg-gradient-to-br from-yellow-100 to-orange-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden border-2 border-[#FFD700]">
-                      <video
+                      <ClickableHamzziVideo
+                        src={reward.video_url}
                         className="w-full h-full object-cover"
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                      >
-                        <source src={reward.video_url} type="video/mp4" />
-                      </video>
+                        volume={0.9}
+                      />
                     </div>
                     <p className="text-center font-bold text-lg">
                       ✨ {reward.title} ✨

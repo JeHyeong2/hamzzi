@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useStore, Category } from '@/lib/store';
 import { createMission } from '@/lib/services';
 import { signOut } from '@/lib/auth/authHelpers';
-import { CATEGORY_CONFIG } from '@/lib/constants';
+import { CATEGORY_CONFIG, MEDIA_SIZES } from '@/lib/constants';
 import { getNormalMediaPath, getMediaType } from '@/lib/mediaUtils';
 import { useNavigationGuard } from '@/lib/hooks/useNavigationGuard';
 import { useSmartNavigation } from '@/lib/hooks/useSmartNavigation';
@@ -13,10 +14,13 @@ import AnimatedBackground from '@/components/AnimatedBackground';
 import PageTransition from '@/components/PageTransition';
 import CharacterAnimation from '@/components/CharacterAnimation';
 import WaveText from '@/components/WaveText';
+import { useSound } from '@/lib/SoundContext';
+import { ClickableHamzziVideo } from '@/components/ClickableHamzziVideo';
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, setCurrentMission } = useStore();
+  const { user, setCurrentMission, checkAndUnlockBadges } = useStore();
+  const { playClick, playPrimary } = useSound(); // 사운드 효과 Hook
   const [category, setCategory] = useState<Category>('meal');
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,6 +43,11 @@ export default function HomePage() {
   useEffect(() => {
     setMediaPath(getNormalMediaPath());
   }, []);
+
+  // 페이지 로드 시 배지 해금 체크 (조건을 만족한 배지 자동 해금)
+  useEffect(() => {
+    checkAndUnlockBadges();
+  }, [checkAndUnlockBadges]);
 
   const handleStartMission = async () => {
     if (!title.trim()) {
@@ -94,7 +103,7 @@ export default function HomePage() {
         <AnimatedBackground variant="home" />
 
         {/* 컨텐츠 (배경 위에 표시) */}
-        <div className="relative z-10 min-h-screen p-6">
+        <div className="relative z-10 min-h-screen p-6 max-w-2xl mx-auto">
         {/* 상단 배지 & 아이콘들 */}
         <div className="flex justify-between items-center mb-6 animate-slide-up">
           {/* 미션성공한 배지 */}
@@ -106,19 +115,28 @@ export default function HomePage() {
           {/* 우측 아이콘들 */}
           <div className="flex gap-3">
             <button
-              onClick={() => router.push('/rewards')}
+              onClick={() => {
+                playClick();
+                router.push('/rewards');
+              }}
               className="text-2xl hover:scale-110 transition"
             >
               🎁
             </button>
             <button
-              onClick={() => router.push('/achievements')}
+              onClick={() => {
+                playClick();
+                router.push('/achievements');
+              }}
               className="text-2xl hover:scale-110 transition"
             >
               📊
             </button>
             <button
-              onClick={() => router.push('/help')}
+              onClick={() => {
+                playClick();
+                router.push('/help');
+              }}
               className="text-2xl hover:scale-110 transition"
             >
               💚
@@ -136,20 +154,19 @@ export default function HomePage() {
           </div>
           {mediaPath && (
             getMediaType(mediaPath) === 'video' ? (
-              <video
-                className="mx-auto w-70 h-70"
-                autoPlay
-                loop
-                muted
-                playsInline
-              >
-                <source src={mediaPath} type="video/mp4" />
-              </video>
+              <ClickableHamzziVideo
+                src={mediaPath}
+                className={`mx-auto ${MEDIA_SIZES.HAMZZI_CHARACTER.className}`}
+                volume={0.8}
+              />
             ) : (
-              <img
+              <Image
                 src={mediaPath}
                 alt="응원하는 햄찌"
-                className="mx-auto w-60 h-60 object-cover"
+                width={MEDIA_SIZES.HAMZZI_CHARACTER.width}
+                height={MEDIA_SIZES.HAMZZI_CHARACTER.height}
+                className="mx-auto object-cover"
+                priority
               />
             )
           )}
@@ -162,7 +179,10 @@ export default function HomePage() {
             {(Object.keys(CATEGORY_CONFIG) as Category[]).map((cat) => (
               <button
                 key={cat}
-                onClick={() => setCategory(cat)}
+                onClick={() => {
+                  playClick(); // 클릭 효과음 재생
+                  setCategory(cat);
+                }}
                 className={`p-3 transition-all font-semibold ${
                   category === cat
                     ? `${CATEGORY_CONFIG[cat].bgColor} ${CATEGORY_CONFIG[cat].textColor} scale-110 shadow-lg rounded-xl`
@@ -190,7 +210,7 @@ export default function HomePage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleStartMission()}
-            className="input-base w-full mb-2"
+            className="input-base w-full mb-2 text-center"
           />
 
           {/* 가이드 메시지 */}
@@ -198,7 +218,10 @@ export default function HomePage() {
         
          {/* 시작 버튼 - 카드 밖 */}
         <button
-          onClick={handleStartMission}
+          onClick={() => {
+            playPrimary(); // Primary 버튼 효과음 재생
+            handleStartMission();
+          }}
           disabled={loading || isNavigating}
           className="btn-base w-full transition-all duration-200 animate-slide-up"
           style={{

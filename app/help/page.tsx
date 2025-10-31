@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { useSound } from '@/lib/SoundContext';
+import { MEDIA_SIZES } from '@/lib/constants';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import PageTransition from '@/components/PageTransition';
 import { getNormalMediaPath, getMediaType } from '@/lib/mediaUtils';
 
 export default function HelpPage() {
   const router = useRouter();
+  const { playClick } = useSound(); // 사운드 효과 Hook
   const [mediaPath, setMediaPath] = useState<string>('');
   const [mediaType, setMediaType] = useState<'image' | 'video'>('video');
 
@@ -47,10 +51,13 @@ export default function HelpPage() {
         <AnimatedBackground variant="home" />
 
       {/* 컨텐츠 */}
-      <div className="relative z-10 min-h-screen p-6">
+      <div className="relative z-10 min-h-screen p-6 max-w-2xl mx-auto">
       {/* 헤더 */}
       <div className="flex items-center mb-6">
-        <button onClick={() => router.back()} className="mr-4 text-2xl">
+        <button onClick={() => {
+          playClick();
+          router.back();
+        }} className="mr-4 text-2xl">
           🐹
         </button>
         <h1 className="text-lg font-bold">마음이 힘들 때 응급 도움말</h1>
@@ -62,7 +69,7 @@ export default function HelpPage() {
           <>
             {mediaType === 'video' ? (
               <video
-                className="w-64 h-64 rounded-lg"
+                className={`${MEDIA_SIZES.HAMZZI_CHARACTER.className} rounded-lg`}
                 autoPlay
                 loop
                 muted
@@ -71,10 +78,13 @@ export default function HelpPage() {
                 <source src={mediaPath} type="video/mp4" />
               </video>
             ) : (
-              <img
+              <Image
                 src={mediaPath}
                 alt="햄찌"
-                className="w-64 h-64 rounded-lg object-cover"
+                width={MEDIA_SIZES.HAMZZI_CHARACTER.width}
+                height={MEDIA_SIZES.HAMZZI_CHARACTER.height}
+                className="rounded-lg object-cover"
+                priority
               />
             )}
           </>

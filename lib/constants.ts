@@ -346,3 +346,28 @@ export const HAMZZI_VIDEOS = {
   abandon: '/hamzzi_source/abandon.MP4',
   achievement: '/hamzzi_source/achievement.MP4',
 };
+
+/**
+ * 미디어 크기 상수
+ * 모든 페이지에서 일관된 크기 사용을 위한 중앙화된 설정
+ */
+export const MEDIA_SIZES = {
+  /** 캐릭터 이미지/비디오 기본 크기 (Home, Landing, Help 등) */
+  HAMZZI_CHARACTER: {
+    width: 280,
+    height: 280,
+    className: 'w-70 h-70', // Tailwind: 280px
+  },
+  /** 미션 관련 비디오 크기 (Mission, Success, Abandon) */
+  HAMZZI_VIDEO: {
+    width: 256,
+    height: 256,
+    className: 'w-64 h-64', // Tailwind: 256px
+  },
+  /** 큰 캐릭터 (필요 시 사용) */
+  HAMZZI_LARGE: {
+    width: 320,
+    height: 320,
+    className: 'w-80 h-80', // Tailwind: 320px
+  },
+} as const;

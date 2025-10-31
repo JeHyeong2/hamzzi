@@ -2,16 +2,20 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Confetti from 'react-confetti';
-import { ABANDON_PAGE_MESSAGES } from '@/lib/constants';
+import { ABANDON_PAGE_MESSAGES, MEDIA_SIZES } from '@/lib/constants';
 import { getFailMedia } from '@/lib/mediaUtils';
 import { useNavigationGuard } from '@/lib/hooks/useNavigationGuard';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import PageTransition from '@/components/PageTransition';
 import CharacterAnimation from '@/components/CharacterAnimation';
+import { useSound } from '@/lib/SoundContext';
+import { ClickableHamzziVideo } from '@/components/ClickableHamzziVideo';
 
 export default function MissionAbandonPage() {
   const router = useRouter();
+  const { playClick } = useSound(); // 사운드 효과 Hook
   const [message, setMessage] = useState(ABANDON_PAGE_MESSAGES[0]);
   const [failMediaPath, setFailMediaPath] = useState('');
   const [failMediaType, setFailMediaType] = useState<'image' | 'video'>('video');
@@ -48,7 +52,7 @@ export default function MissionAbandonPage() {
         <AnimatedBackground variant="home" />
 
       {/* 컨텐츠 */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6 max-w-2xl mx-auto">
         <h2 className="text-lg font-semibold mb-4 animate-slide-up">응원하는 햄스터</h2>
 
         {/* 위로 메시지 */}
@@ -61,21 +65,19 @@ export default function MissionAbandonPage() {
         <div className="mb-6 animate-slide-up" style={{ animationDelay: '200ms' }}>
           <CharacterAnimation variant="support">
             {failMediaPath && failMediaType === 'image' ? (
-              <img
+              <Image
                 src={failMediaPath}
                 alt="mission end"
-                className="w-64 h-64 object-cover"
+                width={MEDIA_SIZES.HAMZZI_VIDEO.width}
+                height={MEDIA_SIZES.HAMZZI_VIDEO.height}
+                className="object-cover"
               />
             ) : failMediaPath && failMediaType === 'video' ? (
-              <video
-                className="w-64 h-64"
-                autoPlay
-                loop
-                muted
-                playsInline
-              >
-                <source src={failMediaPath} type="video/mp4" />
-              </video>
+              <ClickableHamzziVideo
+                src={failMediaPath}
+                className={MEDIA_SIZES.HAMZZI_VIDEO.className}
+                volume={0.7}
+              />
             ) : null}
           </CharacterAnimation>
 
@@ -87,7 +89,10 @@ export default function MissionAbandonPage() {
    
         {/* 홈 버튼 */}
         <button
-          onClick={() => router.push('/home')}
+          onClick={() => {
+            playClick();
+            router.push('/home');
+          }}
           className="fixed bottom-10 text-[var(--primary-pink)] font-semibold hover:underline transition"
         >
           홈화면으로 가기 🏠
