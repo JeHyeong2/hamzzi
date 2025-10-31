@@ -18,8 +18,16 @@
  * // 개발: "http://localhost:3000"
  */
 export function getSiteUrl(): string {
-  // Vercel 환경 변수 직접 사용 (가장 확실한 방법)
-  return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
+  // 디버깅용 로그 (프로덕션에서 환경 변수 확인)
+  if (typeof window !== 'undefined') {
+    console.log('🔍 [getSiteUrl] 환경 변수:', envUrl);
+    console.log('🔍 [getSiteUrl] 현재 origin:', window.location.origin);
+  }
+
+  // Vercel 환경 변수 직접 사용
+  return envUrl || 'http://localhost:3000';
 }
 
 /**
