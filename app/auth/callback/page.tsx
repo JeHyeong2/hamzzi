@@ -35,14 +35,9 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     async function handleCallback() {
-      console.log('🔵 [handleCallback] 시작');
-
       try {
-        console.log('🚀 Supabase Auth 세션 조회 시작...');
         // 1. URL 해시에서 Auth 토큰 추출 및 세션 설정
         const { data, error: authError } = await supabase.auth.getSession();
-
-        console.log('📥 Auth 세션 응답:', { data, error: authError });
 
         if (authError) {
           console.error('🚨 Auth 콜백 오류:', authError);
@@ -60,15 +55,7 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        console.log('✅ Google 로그인 성공');
-        console.log('📊 세션 정보:', {
-          userId: session.user.id,
-          email: session.user.email,
-          metadata: session.user.user_metadata,
-        });
-
         // 2. DB에서 프로필 확인 (재로그인 체크)
-        console.log('🔵 DB 프로필 조회 시작...');
         let userProfile = null;
         try {
           userProfile = await getUserProfileByAuthId(session.user.id);
@@ -77,11 +64,8 @@ export default function AuthCallbackPage() {
           console.warn('⚠️ 프로필 조회 실패 (RLS 또는 권한 문제):', err);
         }
 
-        console.log('📊 프로필 조회 결과:', userProfile);
-
         if (userProfile) {
           // 프로필이 이미 존재 → 재로그인 → DB 정보를 store에 저장 후 홈으로
-          console.log('✅ 재로그인 성공: DB 전체 정보를 store에 저장 중...');
 
           // 1. 기본 사용자 정보 저장
           setUser({
@@ -93,23 +77,18 @@ export default function AuthCallbackPage() {
           });
 
           // 2. 카테고리 점수 조회 및 저장
-          console.log('🔍 카테고리 점수 조회 중...');
           const categoryScores = await getCategoryScores(userProfile.id);
           if (categoryScores.length > 0) {
             setCategoryScores(categoryScores);
-            console.log('✅ 카테고리 점수 로드 완료:', categoryScores);
           }
 
           // 3. 배지 조회 및 저장
-          console.log('🔍 배지 정보 조회 중...');
           const unlockedBadgeIds = await getUserBadges(userProfile.id);
           if (unlockedBadgeIds.length > 0) {
             unlockedBadgeIds.forEach((badgeId) => unlockBadge(badgeId));
-            console.log('✅ 배지 정보 로드 완료:', unlockedBadgeIds);
           }
 
           // 4. 완료된 미션 개수 조회 (총 달성 횟수)
-          console.log('🔍 완료 횟수 조회 중...');
           const { count: completedCount } = await supabase
             .from('missions')
             .select('id', { count: 'exact', head: true })
@@ -118,9 +97,7 @@ export default function AuthCallbackPage() {
 
           const totalCount = completedCount || 0;
           setTotalCompletedCount(totalCount);
-          console.log(`✅ 총 달성 횟수: ${totalCount}회`);
 
-          console.log('✅ 모든 데이터 로드 완료 → 홈으로 이동');
           router.push('/home');
           return;
         }
@@ -132,8 +109,6 @@ export default function AuthCallbackPage() {
           avatarUrl: session.user.user_metadata.avatar_url,
           fullName: session.user.user_metadata.full_name,
         });
-
-        console.log('ℹ️ 첫 로그인: Google 정보를 store에 저장');
 
         // 4. 프로필 설정 페이지로 이동 (이름 입력)
         router.push('/auth/setup-profile');

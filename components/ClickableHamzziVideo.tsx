@@ -116,10 +116,10 @@ export function ClickableHamzziVideo({
         onEnded={handleVideoEnded}
       />
 
-      {/* 클릭 가능 힌트 (전역 음소거가 아닐 때만 표시) */}
+      {/* 클릭 가능 힌트 (전역 음소거가 아닐 때만 표시, 처음부터 보임) */}
       {!globalMuted && !isPlayingWithSound && (
-        <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          🔊 클릭해서 소리 듣기
+        <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded transition-all pointer-events-none group-hover:bg-black/80">
+          🔊 클릭해서 소리 들어봐 (없을수도..🐹)
         </div>
       )}
 

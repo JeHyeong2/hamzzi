@@ -226,7 +226,9 @@ export default function MissionPage() {
         </div>
 
         <div className="p-6 flex flex-col items-center justify-center min-h-[calc(100vh-60px)]">
-          <h2 className="text-xl font-semibold mb-3">응원하는 햄찌</h2>
+          <h2 className="text-xl font-semibold mb-3 animate-wave">
+            응원하는 <span className="text-2xl font-bold" style={{ color: headerBgColor }}>{user?.name || ''}</span> 햄찌
+          </h2>
 
           {/* 미션 제목 */}
           <p className="text-center mb-6 text-lg">

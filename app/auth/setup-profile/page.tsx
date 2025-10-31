@@ -50,43 +50,38 @@ export default function SetupProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('🔵 [handleSubmit] 프로필 생성 시작');
-    console.log('📝 입력된 이름:', name);
+    // 입력값 보안 처리: HTML 태그 및 특수문자 제거
+    const sanitizedName = name
+      .trim()
+      .replace(/<[^>]*>/g, '') // HTML 태그 제거
+      .replace(/[<>'"]/g, '') // XSS 위험 문자 제거
+      .slice(0, 20); // 최대 20자 제한
 
-    if (!name.trim()) {
-      console.warn('⚠️ 이름이 입력되지 않음');
+    if (!sanitizedName) {
       toast.error('이름을 입력해주세요');
       return;
     }
 
     if (!tempGoogleAuth) {
-      console.error('🚨 tempGoogleAuth가 없음!');
       toast.error('Google 로그인 정보가 없습니다');
       router.push('/');
       return;
     }
 
-    console.log('📊 tempGoogleAuth 정보:', tempGoogleAuth);
-
     setIsSubmitting(true);
 
     try {
-      console.log('🚀 createUserProfile 호출...');
-      // 사용자 프로필 생성 (한번에 DB에 저장)
+      // 사용자 프로필 생성 (sanitized name 사용)
       const userProfile = await createUserProfile(
         tempGoogleAuth.authId,
         tempGoogleAuth.email,
-        name,
+        sanitizedName,
         tempGoogleAuth.avatarUrl
       );
-
-      console.log('📥 createUserProfile 응답:', userProfile);
 
       if (!userProfile) {
         throw new Error('프로필 생성 실패');
       }
-
-      console.log('✅ 프로필 생성 완료:', userProfile);
 
       // 생성된 프로필을 store에 저장
       setUser({
@@ -100,7 +95,7 @@ export default function SetupProfilePage() {
       // store에서 임시 Google 정보 삭제
       clearTempGoogleAuth();
 
-      toast.success(`환영합니다, ${name}님! 🎉`);
+      toast.success(`환영합니다, ${sanitizedName}님! 🎉`);
       router.push('/home');
     } catch (error) {
       console.error('프로필 생성 오류:', error);
