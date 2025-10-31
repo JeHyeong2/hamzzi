@@ -32,9 +32,28 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-
+.env.local
 # vercel
 .vercel
+
+# claude code
+.claude*
+claude*
+.serena/
+.playwright-mcp/
+
+# development tools
+test-supabase.js
+dev-server.log
+
+# documentation (optional - 프로젝트에 포함하려면 제거하세요)
+DESIGN_*.md
+DUOLINGO_*.md
+IMPLEMENTATION_*.md
+RESPONSIVE_*.md
+SETUP_*.md
+SUPABASE_*.md
+next_step.md
 
 # typescript
 *.tsbuildinfo
