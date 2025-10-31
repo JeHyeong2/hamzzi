@@ -3,10 +3,10 @@
  * 환경에 따라 자동으로 적절한 URL을 반환합니다.
  *
  * 환경 감지 우선순위:
- * 1. NEXT_PUBLIC_SITE_URL 환경 변수 (명시적 설정)
- * 2. NEXT_PUBLIC_VERCEL_URL (클라이언트 사이드 Vercel URL)
- * 3. VERCEL_URL (서버 사이드 Vercel URL - 자동 제공)
- * 4. window.location.origin (브라우저 환경)
+ * 1. window.location.origin (브라우저 환경 - OAuth 등 클라이언트 실행)
+ * 2. NEXT_PUBLIC_SITE_URL (서버 사이드 명시적 설정)
+ * 3. NEXT_PUBLIC_VERCEL_URL (서버 사이드 Vercel URL)
+ * 4. VERCEL_URL (서버 사이드 Vercel URL - 자동 제공)
  * 5. 폴백: http://localhost:3000
  */
 
@@ -21,24 +21,26 @@
  * // 개발: "http://localhost:3000"
  */
 export function getSiteUrl(): string {
-  // 1순위: 환경 변수로 명시적 설정
+  // 1순위: 브라우저 환경에서는 항상 현재 origin 사용
+  // OAuth는 클라이언트에서 실행되므로 런타임에 정확한 도메인 사용
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+
+  // 서버 사이드: 환경 변수 체크 (SSR, API routes 등)
+  // 2순위: 환경 변수로 명시적 설정
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL;
   }
 
-  // 2순위: Vercel 자동 배포 URL (클라이언트)
+  // 3순위: Vercel 자동 배포 URL (클라이언트)
   if (process.env.NEXT_PUBLIC_VERCEL_URL) {
     return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
   }
 
-  // 3순위: Vercel 자동 배포 URL (서버 사이드)
+  // 4순위: Vercel 자동 배포 URL (서버 사이드)
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
-  }
-
-  // 4순위: 브라우저 환경에서 현재 origin 사용
-  if (typeof window !== 'undefined') {
-    return window.location.origin;
   }
 
   // 최종 폴백: 개발 환경 기본값
